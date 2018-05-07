@@ -12,6 +12,7 @@ export class Service {
   private readonly logger: Pino.Logger
   private readonly claimController: ClaimController
   private readonly interval: Interval
+  private readonly configuration: ServiceConfiguration
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
@@ -20,6 +21,7 @@ export class Service {
   ) {
     this.logger = childWithFileName(logger, __filename)
     this.claimController = claimController
+    this.configuration = configuration;
     this.interval = new Interval(
       this.downloadNextHash,
       1000 * configuration.downloadIntervalInSeconds
@@ -36,7 +38,7 @@ export class Service {
 
   private downloadNextHash = async () => {
     try {
-      await this.claimController.downloadNextHash()
+      await this.claimController.downloadNextHash({ downloadDelay: this.configuration.downloadAttemptDelay })
     } catch (error) {
       this.logger.error(
         {

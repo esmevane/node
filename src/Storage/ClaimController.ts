@@ -60,47 +60,51 @@ export class ClaimController {
     )
   }
 
-  async downloadNextHash() {
+  async handleHashDownload(ipfsHash: string) {
+    const logger = this.logger.child({ method: 'handleHashDownload' });
+
+    try {
+      logger.trace({ ipfsHash }, 'Downloading Next Hash')
+      const claim = await this.downloadClaim(ipfsHash)
+      logger.info({ ipfsHash, claim }, 'Successfully downloaded claim from IPFS')
+      await this.updateClaimIdIPFSHashPairs([
+        {
+          claimId: claim.id,
+          ipfsHash
+        }
+      ])
+
+      await this.messaging.publishClaimsDownloaded([
+        {
+          claim,
+          ipfsHash
+        }
+      ])
+    } catch (exception) {
+      logger.debug({ ipfsHash, exception }, 'Failed to Download Claim')
+    }
+  }
+
+  async downloadNextHash({
+    currentTime = new Date().getTime(),
+    downloadDelay = 600000
+  } = {}) {
     const logger = this.logger.child({ method: 'downloadNextHash' })
 
     logger.trace('Downloading Next Hash')
 
-    const ipfsHashEntry = await this.collection.findOne({
+    await this.collection.findOneAndUpdate({
       claimId: null,
-      $or: [{ attempts: { $lt: 5 } }, { attempts: { $exists: false } }]
-    })
-    const ipfsHash = ipfsHashEntry && ipfsHashEntry.ipfsHash
-
-    logger.trace({ ipfsHash }, 'Downloading Next Hash')
-
-    if (!ipfsHash) return
-
-    let claim
-    try {
-      claim = await this.downloadClaim(ipfsHash)
-    } catch (exception) {
-      await this.collection.updateOne({ ipfsHash }, { $inc: { attempts: 1 } })
-
-      logger.debug({ ipfsHash, exception }, 'Failed to Download Claim')
-
-      return
-    }
-
-    logger.info({ ipfsHash, claim }, 'Successfully downloaded claim from IPFS')
-
-    await this.updateClaimIdIPFSHashPairs([
-      {
-        claimId: claim.id,
-        ipfsHash
-      }
-    ])
-
-    await this.messaging.publishClaimsDownloaded([
-      {
-        claim,
-        ipfsHash
-      }
-    ])
+      lastDownloadSuccess: { $exists: false },
+      lastDownloadAttempt: { $lt: currentTime + downloadDelay }
+    }, {
+      lastDownloadAttempt: currentTime
+    },
+    (error, { value }) => {
+      if (error) return;
+      if (!value || !value.ipfsHash) return;
+      this.handleHashDownload(value.ipfsHash);
+    })    
   }
 
   private downloadClaim = async (ipfsHash: string): Promise<Claim> => {
