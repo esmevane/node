@@ -7,6 +7,8 @@ import { childWithFileName } from 'Helpers/Logging'
 import { ClaimController } from './ClaimController'
 import { ServiceConfiguration } from './ServiceConfiguration'
 
+const toMinutes = (milliseconds: number) => 1000 * 60 * milliseconds;
+
 @injectable()
 export class Service {
   private readonly logger: Pino.Logger
@@ -38,7 +40,9 @@ export class Service {
 
   private downloadNextHash = async () => {
     try {
-      await this.claimController.downloadNextHash({ downloadDelay: this.configuration.downloadAttemptDelay })
+      await this.claimController.downloadNextHash({
+        downloadRetryDelay: toMinutes(this.configuration.downloadRetryDelayInMinutes)
+      })
     } catch (error) {
       this.logger.error(
         {

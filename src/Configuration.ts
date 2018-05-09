@@ -24,7 +24,7 @@ export interface Configuration extends LoggingConfiguration {
   readonly timestampIntervalInSeconds?: number
 
   readonly downloadIntervalInSeconds: number
-  readonly downloadAttemptDelay: number
+  readonly downloadRetryDelayInMinutes: number
 }
 
 export interface LoggingConfiguration {
@@ -48,7 +48,7 @@ const defaultConfiguration: Configuration = {
   timestampIntervalInSeconds: 30,
 
   downloadIntervalInSeconds: 5,
-  downloadAttemptDelay: 600000,
+  downloadRetryDelayInMinutes: 10,
 
   loggingLevel: 'info',
   loggingPretty: true,

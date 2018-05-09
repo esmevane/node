@@ -62,7 +62,7 @@ async function main() {
     ipfsUrl: configuration.ipfsUrl,
     rabbitmqUrl: configuration.rabbitmqUrl,
     downloadIntervalInSeconds: configuration.downloadIntervalInSeconds,
-    downloadAttemptDelay: configuration.downloadAttemptDelay
+    downloadRetryDelayInMinutes: configuration.downloadRetryDelayInMinutes
   })
   try {
     await storage.start()

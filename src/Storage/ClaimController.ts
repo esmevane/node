@@ -93,7 +93,7 @@ export class ClaimController {
 
   async downloadNextHash({
     currentTime = new Date().getTime(),
-    downloadDelay = 600000
+    downloadRetryDelay = 600000
   } = {}) {
     const logger = this.logger.child({ method: 'downloadNextHash' })
 
@@ -111,7 +111,7 @@ export class ClaimController {
             $or: [
               { lastDownloadAttempt: null },
               { lastDownloadAttempt: { $exists: false } },
-              { lastDownloadAttempt: { $lt: currentTime - downloadDelay } },
+              { lastDownloadAttempt: { $lt: currentTime - downloadRetryDelay } },
             ]
           },
           {
