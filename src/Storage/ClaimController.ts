@@ -123,7 +123,7 @@ export class ClaimController {
         ]
       });
     } catch(e) {
-      logger.info('failed to find a downloadable record');
+      logger.info('No downloadable records');
     }
 
     if (!record) {
@@ -133,37 +133,16 @@ export class ClaimController {
 
     logger.info(record);
     try {
-    await this.collection.updateOne({
+      await this.collection.updateOne({
       _id: record._id
-    }, {
-      $set: { lastDownloadAttempt: currentTime }
-    });
-  } catch(e) {
-    logger.info('failed to update lastDownloadAttempt');
-  }
+      }, {
+        $set: { lastDownloadAttempt: currentTime }
+      });
+    } catch(e) {
+      logger.info('failed to update lastDownloadAttempt');
+    }
 
-    this.handleHashDownload(record.ipfsHash);
-    
-
-    // await this.collection.findOneAndUpdate({
-    //   claimId: null,
-    //   lastDownloadSuccess: { $exists: false },
-    //   ipfsHash: { $exists: true },
-    //   $or: [
-    //     { lastDownloadAttempt: { $lt: currentTime - downloadDelay } },
-    //     { lastDownloadAttempt: { $exists: false } }
-    //   ]
-    // }, {
-    //   lastDownloadAttempt: currentTime
-    // },
-    // (error, result) => {
-    //   logger.info(error, result);
-    //   if (error) return;
-    //   if (!result) return;
-    //   if (!result.value) return;
-    //   if (!result.value.ipfsHash) return;
-    //   
-    // })    
+    this.handleHashDownload(record.ipfsHash); 
   }
 
   private downloadClaim = async (ipfsHash: string): Promise<Claim> => {
