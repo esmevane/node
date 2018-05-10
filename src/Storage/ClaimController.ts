@@ -1,7 +1,6 @@
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
-import * as ramda from 'ramda';
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
 import { childWithFileName } from 'Helpers/Logging'
