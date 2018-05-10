@@ -47,7 +47,7 @@ export class Service {
           method: 'downloadNextHash',
           error,
         },
-        'Uncaught Error Downloading Next Hash'
+        'Error while Downloading Next Hash'
       )
     }
   }
