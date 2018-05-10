@@ -1,13 +1,20 @@
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
+import * as ramda from 'ramda';
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
+import { Entry } from './Entry';
 
 import { IPFS } from './IPFS'
+
+const trace = (label: string) => (value: any) => {
+  console.log(label, value);
+  return value;
+}
 
 @injectable()
 export class ClaimController {
@@ -37,7 +44,7 @@ export class ClaimController {
 
     const ipfsHash = await this.ipfs.addText(JSON.stringify(claim))
 
-    logger.info({ claim, ipfsHash }, 'Claim Stored')
+    logger.trace({ claim, ipfsHash }, 'Claim Stored')
 
     await this.collection.insertOne({
       claimId: claim.id,
@@ -50,7 +57,6 @@ export class ClaimController {
   }
 
   async download(ipfsHashes: ReadonlyArray<string>) {
-    console.log('download', ipfsHashes);
     const logger = this.logger.child({ method: 'download' })
 
     logger.trace({ ipfsHashes }, 'Downloading Claims')
@@ -66,98 +72,162 @@ export class ClaimController {
         { ordered: false }
       )
     } catch (e) {
-      logger.info('error inserting many')
+      logger.trace('error inserting many')
     }
   }
 
-  async handleHashDownload(ipfsHash: string) {
-    const logger = this.logger.child({ method: 'handleHashDownload' });
-    logger.info('downloading', ipfsHash)
-
-    try {
-      logger.trace({ ipfsHash }, 'Downloading Next Hash')
-      const claim = await this.downloadClaim(ipfsHash)
-      logger.info('Successfully downloaded claim from IPFS');
-      logger.info({ ipfsHash, claim }, 'Successfully downloaded claim from IPFS')
-      await this.updateClaimIdIPFSHashPairs([
-        {
-          claimId: claim.id,
-          ipfsHash
-        }
-      ])
-
-      await this.messaging.publishClaimsDownloaded([
-        {
-          claim,
-          ipfsHash
-        }
-      ])
-    } catch (exception) {
-      logger.info('failed to download claim');
-      logger.debug({ ipfsHash, exception }, 'Failed to Download Claim')
+  async updateEntryPairs({
+    entry,
+    claim,
+    ...rest
+  }: {
+    claim: Claim,
+    entry: Entry,
+  }) {
+    const logger = this.logger.child({ method: 'publishEntryDownload' });
+    logger.trace('started claim update has pairs');
+    this.updateClaimIdIPFSHashPairs([
+      {
+        claimId: claim.id,
+        ipfsHash: entry.ipfsHash
+      }
+    ])
+    logger.trace('finished claim update has pairs');
+    return {
+      claim,
+      entry,
+      ...rest
     }
   }
 
-  async downloadNextHash({
+  async publishEntryDownload({
+    entry,
+    claim,
+    ...rest
+  }: {
+    claim: Claim,
+    entry: Entry,
+  }) {
+    const logger = this.logger.child({ method: 'publishEntryDownload' });
+    logger.trace('started claim publishing');
+    await this.messaging.publishClaimsDownloaded([
+      {
+        claim,
+        ipfsHash: entry.ipfsHash
+      }
+    ])
+    logger.trace('finished claim publishing');
+    return {
+      claim,
+      entry,
+      ...rest
+    }
+  }
+
+  async downloadEntryClaim({
+    entry,
+    ...rest
+  }: {
+    entry: Entry
+  }) {
+    const logger = this.logger.child({ method: 'downloadEntryClaim' });
+    logger.trace('starting claim download');
+    const claim = await this.downloadClaim(entry.ipfsHash)
+    logger.trace('finished claim download', claim);
+    return {
+      entry,
+      claim,
+      ...rest
+    }
+  }
+
+  async findEntryToDownload({
     currentTime = new Date().getTime(),
-    retryDelay = 600000,
-    maxAttempts = 20
-  } = {}) {
-    const logger = this.logger.child({ method: 'downloadNextHash' })
-
-    logger.trace('Downloading Next Hash')
-    let record;
-
-    try {
-      record = await this.collection.findOne({
-        claimId: null,
-        ipfsHash: { $exists: true },
-        $and: [
-          {
-            $or: [
-              { lastDownloadAttempt: null },
-              { lastDownloadAttempt: { $exists: false } },
-              { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
-            ]
-          },
-          {
-            $or: [
-              { lastDownloadSuccess: null },
-              { lastDownloadSuccess: { $exists: false } }
-            ]
-          },
-          {
-            $or: [
-              { downloadAttempts: null },
-              { downloadAttempts: { $exists: false } },
-              { downloadAttempts: { $lte: maxAttempts } }
-            ]
-          }
-        ]
-      });
-    } catch(e) {
-      logger.info('No downloadable records');
+    retryDelay,
+    maxAttempts,
+    ...rest
+  }: {
+    currentTime?: number,
+    retryDelay: number,
+    maxAttempts: number
+  }) {
+    const logger = this.logger.child({ method: 'findEntryToDownload' });
+    logger.info('started finding claim');
+    const entry = await this.collection.findOne({
+      claimId: null,
+      ipfsHash: { $exists: true },
+      $and: [
+        {
+          $or: [
+            { lastDownloadAttempt: null },
+            { lastDownloadAttempt: { $exists: false } },
+            { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
+          ]
+        },
+        {
+          $or: [
+            { lastDownloadSuccess: null },
+            { lastDownloadSuccess: { $exists: false } }
+          ]
+        },
+        {
+          $or: [
+            { downloadAttempts: null },
+            { downloadAttempts: { $exists: false } },
+            { downloadAttempts: { $lte: maxAttempts } }
+          ]
+        }
+      ]
+    });
+    logger.info('finished finding claim', entry);
+    return {
+      currentTime,
+      retryDelay,
+      maxAttempts,
+      entry,
+      ...rest
     }
+  }
 
-    if (!record) {
-      logger.info('no downloadable records found');
-      return;
-    }
 
-    logger.info(record);
-    console.log(record);
-    try {
-      await this.collection.updateOne({
-      _id: record._id
+
+  async updateEntryAttempts({
+    entry,
+    currentTime = new Date().getTime(),
+    ...rest
+  }: {
+    entry: Entry,
+    currentTime?: number
+  }) {
+    const logger = this.logger.child({ method: 'updateEntryAttempts' });
+    logger.trace('started updating claim');
+    await this.collection.updateOne({
+      _id: entry._id
       }, {
         $set: { lastDownloadAttempt: currentTime },
         $inc: { downloadAttempts: 1 }
-      });
-    } catch(e) {
-      logger.info('failed to update lastDownloadAttempt');
+    });
+    logger.trace('finished updating claim');
+    return {
+      entry,
+      currentTime,
+      ...rest
     }
+  }
 
-    this.handleHashDownload(record.ipfsHash); 
+
+  async downloadNextHash({
+    retryDelay = 600000,
+    maxAttempts = 20
+  }: {
+    retryDelay: number,
+    maxAttempts: number
+  }) {
+    return this.findEntryToDownload({ retryDelay, maxAttempts })
+      .then(this.updateEntryAttempts.bind(this))
+      .then(this.downloadEntryClaim.bind(this))
+      .then(this.updateEntryPairs.bind(this))
+      .then(this.publishEntryDownload.bind(this))
   }
 
   private downloadClaim = async (ipfsHash: string): Promise<Claim> => {
