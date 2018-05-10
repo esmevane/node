@@ -6,8 +6,8 @@ import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
-import { Entry } from './Entry'
 
+import { Entry } from './Entry'
 import { IPFS } from './IPFS'
 
 @injectable()
@@ -67,9 +67,9 @@ export class ClaimController {
   }
 
   async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
-    const logger = this.logger.child({ method: 'publishEntryDownload' })
+    const logger = this.logger.child({ method: 'updateEntryPairs' })
     logger.trace('started claim update hash pairs')
-    this.updateClaimIdIPFSHashPairs([
+    await this.updateClaimIdIPFSHashPairs([
       {
         claimId: claim.id,
         ipfsHash: entry.ipfsHash,
