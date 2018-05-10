@@ -6,14 +6,9 @@ import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
-import { Entry } from './Entry';
+import { Entry } from './Entry'
 
 import { IPFS } from './IPFS'
-
-const trace = (label: string) => (value: any) => {
-  console.log(label, value);
-  return value;
-}
 
 @injectable()
 export class ClaimController {
@@ -80,18 +75,18 @@ export class ClaimController {
     claim,
     ...rest
   }: {
-    claim: Claim,
-    entry: Entry,
+    claim: Claim
+    entry: Entry
   }) {
-    const logger = this.logger.child({ method: 'publishEntryDownload' });
-    logger.trace('started claim update has pairs');
+    const logger = this.logger.child({ method: 'publishEntryDownload' })
+    logger.trace('started claim update has pairs')
     this.updateClaimIdIPFSHashPairs([
       {
         claimId: claim.id,
         ipfsHash: entry.ipfsHash
       }
     ])
-    logger.trace('finished claim update has pairs');
+    logger.trace('finished claim update has pairs')
     return {
       claim,
       entry,
@@ -104,18 +99,18 @@ export class ClaimController {
     claim,
     ...rest
   }: {
-    claim: Claim,
-    entry: Entry,
+    claim: Claim
+    entry: Entry
   }) {
-    const logger = this.logger.child({ method: 'publishEntryDownload' });
-    logger.trace('started claim publishing');
+    const logger = this.logger.child({ method: 'publishEntryDownload' })
+    logger.trace('started claim publishing')
     await this.messaging.publishClaimsDownloaded([
       {
         claim,
         ipfsHash: entry.ipfsHash
       }
     ])
-    logger.trace('finished claim publishing');
+    logger.trace('finished claim publishing')
     return {
       claim,
       entry,
@@ -123,16 +118,11 @@ export class ClaimController {
     }
   }
 
-  async downloadEntryClaim({
-    entry,
-    ...rest
-  }: {
-    entry: Entry
-  }) {
-    const logger = this.logger.child({ method: 'downloadEntryClaim' });
-    logger.trace('starting claim download');
+  async downloadEntryClaim({ entry, ...rest }: { entry: Entry }) {
+    const logger = this.logger.child({ method: 'downloadEntryClaim' })
+    logger.trace('starting claim download')
     const claim = await this.downloadClaim(entry.ipfsHash)
-    logger.trace('finished claim download', claim);
+    logger.trace('finished claim download', claim)
     return {
       entry,
       claim,
@@ -146,12 +136,12 @@ export class ClaimController {
     maxAttempts,
     ...rest
   }: {
-    currentTime?: number,
-    retryDelay: number,
+    currentTime?: number
+    retryDelay: number
     maxAttempts: number
   }) {
-    const logger = this.logger.child({ method: 'findEntryToDownload' });
-    logger.info('started finding claim');
+    const logger = this.logger.child({ method: 'findEntryToDownload' })
+    logger.info('started finding claim')
     const entry = await this.collection.findOne({
       claimId: null,
       ipfsHash: { $exists: true },
@@ -160,7 +150,7 @@ export class ClaimController {
           $or: [
             { lastDownloadAttempt: null },
             { lastDownloadAttempt: { $exists: false } },
-            { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
+            { lastDownloadAttempt: { $lt: currentTime - retryDelay } }
           ]
         },
         {
@@ -177,8 +167,8 @@ export class ClaimController {
           ]
         }
       ]
-    });
-    logger.info('finished finding claim', entry);
+    })
+    logger.info('finished finding claim', entry)
     return {
       currentTime,
       retryDelay,
@@ -188,25 +178,26 @@ export class ClaimController {
     }
   }
 
-
-
   async updateEntryAttempts({
     entry,
     currentTime = new Date().getTime(),
     ...rest
   }: {
-    entry: Entry,
+    entry: Entry
     currentTime?: number
   }) {
-    const logger = this.logger.child({ method: 'updateEntryAttempts' });
-    logger.trace('started updating claim');
-    await this.collection.updateOne({
-      _id: entry._id
-      }, {
+    const logger = this.logger.child({ method: 'updateEntryAttempts' })
+    logger.trace('started updating claim')
+    await this.collection.updateOne(
+      {
+        _id: entry._id
+      },
+      {
         $set: { lastDownloadAttempt: currentTime },
         $inc: { downloadAttempts: 1 }
-    });
-    logger.trace('finished updating claim');
+      }
+    )
+    logger.trace('finished updating claim')
     return {
       entry,
       currentTime,
@@ -214,12 +205,11 @@ export class ClaimController {
     }
   }
 
-
   async downloadNextHash({
     retryDelay = 600000,
     maxAttempts = 20
   }: {
-    retryDelay: number,
+    retryDelay: number
     maxAttempts: number
   }) {
     return this.findEntryToDownload({ retryDelay, maxAttempts })

@@ -7,7 +7,7 @@ import { childWithFileName } from 'Helpers/Logging'
 import { ClaimController } from './ClaimController'
 import { ServiceConfiguration } from './ServiceConfiguration'
 
-const toMinutes = (milliseconds: number) => 1000 * 60 * milliseconds;
+const toMinutes = (milliseconds: number) => 1000 * 60 * milliseconds
 
 @injectable()
 export class Service {
@@ -23,7 +23,7 @@ export class Service {
   ) {
     this.logger = childWithFileName(logger, __filename)
     this.claimController = claimController
-    this.configuration = configuration;
+    this.configuration = configuration
     this.interval = new Interval(
       this.downloadNextHash,
       1000 * configuration.downloadIntervalInSeconds

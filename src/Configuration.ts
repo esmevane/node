@@ -53,7 +53,7 @@ const defaultConfiguration: Configuration = {
   downloadMaxAttempts: 20,
 
   loggingLevel: 'info',
-  loggingPretty: true,
+  loggingPretty: true
 }
 
 export const configurationPath = () =>
