@@ -38,7 +38,7 @@ export class ClaimController {
 
     const ipfsHash = await this.ipfs.addText(JSON.stringify(claim))
 
-    logger.trace({ claim, ipfsHash }, 'Claim Stored')
+    logger.info({ claim, ipfsHash }, 'Claim Stored')
 
     await this.collection.insertOne({
       claimId: claim.id,
