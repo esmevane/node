@@ -64,7 +64,8 @@ export class Storage {
       .bind<ServiceConfiguration>('ServiceConfiguration')
       .toConstantValue({
         downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds,
-        downloadAttemptDelay: this.configuration.downloadAttemptDelay
+        downloadRetryDelayInMinutes: this.configuration.downloadRetryDelayInMinutes,
+        downloadMaxAttempts: this.configuration.downloadMaxAttempts
       })
   }
 

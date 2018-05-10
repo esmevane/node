@@ -50,12 +50,19 @@ export class ClaimController {
   }
 
   async download(ipfsHashes: ReadonlyArray<string>) {
+    console.log('download', ipfsHashes);
     const logger = this.logger.child({ method: 'download' })
 
     logger.trace({ ipfsHashes }, 'Downloading Claims')
     try {
       await this.collection.insertMany(
-        ipfsHashes.map(ipfsHash => ({ ipfsHash, claimId: null, lastDownloadAttempt: null, lastDownloadSuccess: null })),
+        ipfsHashes.map(ipfsHash => ({
+          ipfsHash,
+          claimId: null,
+          lastDownloadAttempt: null,
+          lastDownloadSuccess: null,
+          downloadAttempts: 0
+        })),
         { ordered: false }
       )
     } catch (e) {
@@ -93,7 +100,8 @@ export class ClaimController {
 
   async downloadNextHash({
     currentTime = new Date().getTime(),
-    downloadRetryDelay = 600000
+    retryDelay = 600000,
+    maxAttempts = 20
   } = {}) {
     const logger = this.logger.child({ method: 'downloadNextHash' })
 
@@ -101,8 +109,6 @@ export class ClaimController {
     let record;
 
     try {
-
-      
       record = await this.collection.findOne({
         claimId: null,
         ipfsHash: { $exists: true },
@@ -111,13 +117,20 @@ export class ClaimController {
             $or: [
               { lastDownloadAttempt: null },
               { lastDownloadAttempt: { $exists: false } },
-              { lastDownloadAttempt: { $lt: currentTime - downloadRetryDelay } },
+              { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
             ]
           },
           {
             $or: [
               { lastDownloadSuccess: null },
               { lastDownloadSuccess: { $exists: false } }
+            ]
+          },
+          {
+            $or: [
+              { downloadAttempts: null },
+              { downloadAttempts: { $exists: false } },
+              { downloadAttempts: { $lte: maxAttempts } }
             ]
           }
         ]
@@ -132,11 +145,13 @@ export class ClaimController {
     }
 
     logger.info(record);
+    console.log(record);
     try {
       await this.collection.updateOne({
       _id: record._id
       }, {
-        $set: { lastDownloadAttempt: currentTime }
+        $set: { lastDownloadAttempt: currentTime },
+        $inc: { downloadAttempts: 1 }
       });
     } catch(e) {
       logger.info('failed to update lastDownloadAttempt');

@@ -41,7 +41,8 @@ export class Service {
   private downloadNextHash = async () => {
     try {
       await this.claimController.downloadNextHash({
-        downloadRetryDelay: toMinutes(this.configuration.downloadRetryDelayInMinutes)
+        retryDelay: toMinutes(this.configuration.downloadRetryDelayInMinutes),
+        maxAttempts: this.configuration.downloadMaxAttempts
       })
     } catch (error) {
       this.logger.error(
