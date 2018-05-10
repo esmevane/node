@@ -58,14 +58,11 @@ export class Storage {
     this.container.bind<ClaimController>('ClaimController').to(ClaimController)
     this.container.bind<Messaging>('Messaging').toConstantValue(this.messaging)
     this.container.bind<Service>('Service').to(Service)
-    this.container
-      .bind<ServiceConfiguration>('ServiceConfiguration')
-      .toConstantValue({
-        downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds,
-        downloadRetryDelayInMinutes: this.configuration
-          .downloadRetryDelayInMinutes,
-        downloadMaxAttempts: this.configuration.downloadMaxAttempts
-      })
+    this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue({
+      downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds,
+      downloadRetryDelayInMinutes: this.configuration.downloadRetryDelayInMinutes,
+      downloadMaxAttempts: this.configuration.downloadMaxAttempts,
+    })
   }
 
   private async createIndices() {

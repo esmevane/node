@@ -24,10 +24,7 @@ export class Service {
     this.logger = childWithFileName(logger, __filename)
     this.claimController = claimController
     this.configuration = configuration
-    this.interval = new Interval(
-      this.downloadNextHash,
-      1000 * configuration.downloadIntervalInSeconds
-    )
+    this.interval = new Interval(this.downloadNextHash, 1000 * configuration.downloadIntervalInSeconds)
   }
 
   async start() {
@@ -42,7 +39,7 @@ export class Service {
     try {
       await this.claimController.downloadNextHash({
         retryDelay: toMinutes(this.configuration.downloadRetryDelayInMinutes),
-        maxAttempts: this.configuration.downloadMaxAttempts
+        maxAttempts: this.configuration.downloadMaxAttempts,
       })
     } catch (error) {
       this.logger.error(

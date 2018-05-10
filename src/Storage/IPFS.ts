@@ -18,7 +18,7 @@ export class IPFS {
 
   cat = async (hash: string): Promise<string> => {
     const response = await fetch(`${this.url}/api/v0/cat?arg=${hash}`, {
-      timeout: 10000
+      timeout: 10000,
     })
     return response.text()
   }

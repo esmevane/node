@@ -63,7 +63,7 @@ async function main() {
     rabbitmqUrl: configuration.rabbitmqUrl,
     downloadIntervalInSeconds: configuration.downloadIntervalInSeconds,
     downloadRetryDelayInMinutes: configuration.downloadRetryDelayInMinutes,
-    downloadMaxAttempts: configuration.downloadMaxAttempts
+    downloadMaxAttempts: configuration.downloadMaxAttempts,
   })
   try {
     await storage.start()

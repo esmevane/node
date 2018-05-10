@@ -61,7 +61,7 @@ export class ClaimController {
           claimId: null,
           lastDownloadAttempt: null,
           lastDownloadSuccess: null,
-          downloadAttempts: 0
+          downloadAttempts: 0,
         })),
         { ordered: false }
       )
@@ -70,51 +70,37 @@ export class ClaimController {
     }
   }
 
-  async updateEntryPairs({
-    entry,
-    claim,
-    ...rest
-  }: {
-    claim: Claim
-    entry: Entry
-  }) {
+  async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
     const logger = this.logger.child({ method: 'publishEntryDownload' })
     logger.trace('started claim update has pairs')
     this.updateClaimIdIPFSHashPairs([
       {
         claimId: claim.id,
-        ipfsHash: entry.ipfsHash
-      }
+        ipfsHash: entry.ipfsHash,
+      },
     ])
     logger.trace('finished claim update has pairs')
     return {
       claim,
       entry,
-      ...rest
+      ...rest,
     }
   }
 
-  async publishEntryDownload({
-    entry,
-    claim,
-    ...rest
-  }: {
-    claim: Claim
-    entry: Entry
-  }) {
+  async publishEntryDownload({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
     const logger = this.logger.child({ method: 'publishEntryDownload' })
     logger.trace('started claim publishing')
     await this.messaging.publishClaimsDownloaded([
       {
         claim,
-        ipfsHash: entry.ipfsHash
-      }
+        ipfsHash: entry.ipfsHash,
+      },
     ])
     logger.trace('finished claim publishing')
     return {
       claim,
       entry,
-      ...rest
+      ...rest,
     }
   }
 
@@ -126,7 +112,7 @@ export class ClaimController {
     return {
       entry,
       claim,
-      ...rest
+      ...rest,
     }
   }
 
@@ -150,23 +136,20 @@ export class ClaimController {
           $or: [
             { lastDownloadAttempt: null },
             { lastDownloadAttempt: { $exists: false } },
-            { lastDownloadAttempt: { $lt: currentTime - retryDelay } }
-          ]
+            { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
+          ],
         },
         {
-          $or: [
-            { lastDownloadSuccess: null },
-            { lastDownloadSuccess: { $exists: false } }
-          ]
+          $or: [{ lastDownloadSuccess: null }, { lastDownloadSuccess: { $exists: false } }],
         },
         {
           $or: [
             { downloadAttempts: null },
             { downloadAttempts: { $exists: false } },
-            { downloadAttempts: { $lte: maxAttempts } }
-          ]
-        }
-      ]
+            { downloadAttempts: { $lte: maxAttempts } },
+          ],
+        },
+      ],
     })
     logger.info('finished finding claim', entry)
     return {
@@ -174,7 +157,7 @@ export class ClaimController {
       retryDelay,
       maxAttempts,
       entry,
-      ...rest
+      ...rest,
     }
   }
 
@@ -190,28 +173,22 @@ export class ClaimController {
     logger.trace('started updating claim')
     await this.collection.updateOne(
       {
-        _id: entry._id
+        _id: entry._id,
       },
       {
         $set: { lastDownloadAttempt: currentTime },
-        $inc: { downloadAttempts: 1 }
+        $inc: { downloadAttempts: 1 },
       }
     )
     logger.trace('finished updating claim')
     return {
       entry,
       currentTime,
-      ...rest
+      ...rest,
     }
   }
 
-  async downloadNextHash({
-    retryDelay = 600000,
-    maxAttempts = 20
-  }: {
-    retryDelay: number
-    maxAttempts: number
-  }) {
+  async downloadNextHash({ retryDelay = 600000, maxAttempts = 20 }: { retryDelay: number; maxAttempts: number }) {
     return this.findEntryToDownload({ retryDelay, maxAttempts })
       .then(this.updateEntryAttempts.bind(this))
       .then(this.downloadEntryClaim.bind(this))
