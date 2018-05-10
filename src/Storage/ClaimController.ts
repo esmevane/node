@@ -55,7 +55,7 @@ export class ClaimController {
 
     logger.trace({ ipfsHashes }, 'Downloading Claims')
     await this.collection.insertMany(
-      ipfsHashes.map((ipfsHash) => ({
+      ipfsHashes.map(ipfsHash => ({
         ipfsHash,
         claimId: null,
         lastDownloadAttempt: null,
