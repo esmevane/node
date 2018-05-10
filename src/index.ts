@@ -9,7 +9,6 @@ import { BlockchainWriter } from 'BlockchainWriter/BlockchainWriter'
 import { loadConfigurationWithDefaults } from 'Configuration'
 import { Storage } from 'Storage/Storage'
 import { View } from 'View/View'
-import { config } from 'bluebird';
 
 async function main() {
   console.log('Running Po.et Node')
