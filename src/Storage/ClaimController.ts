@@ -54,20 +54,16 @@ export class ClaimController {
     const logger = this.logger.child({ method: 'download' })
 
     logger.trace({ ipfsHashes }, 'Downloading Claims')
-    try {
-      await this.collection.insertMany(
-        ipfsHashes.map(ipfsHash => ({
-          ipfsHash,
-          claimId: null,
-          lastDownloadAttempt: null,
-          lastDownloadSuccess: null,
-          downloadAttempts: 0,
-        })),
-        { ordered: false }
-      )
-    } catch (e) {
-      logger.trace('error inserting many')
-    }
+    await this.collection.insertMany(
+      ipfsHashes.map((ipfsHash): Entry => ({
+        ipfsHash,
+        claimId: null,
+        lastDownloadAttempt: null,
+        lastDownloadSuccess: null,
+        downloadAttempts: 0,
+      })),
+      { ordered: false }
+    )
   }
 
   async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
