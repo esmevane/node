@@ -68,14 +68,14 @@ export class ClaimController {
 
   async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
     const logger = this.logger.child({ method: 'publishEntryDownload' })
-    logger.trace('started claim update has pairs')
+    logger.trace('started claim update hash pairs')
     this.updateClaimIdIPFSHashPairs([
       {
         claimId: claim.id,
         ipfsHash: entry.ipfsHash,
       },
     ])
-    logger.trace('finished claim update has pairs')
+    logger.trace('finished claim update hash pairs')
     return {
       claim,
       entry,
