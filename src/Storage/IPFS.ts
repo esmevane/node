@@ -29,13 +29,13 @@ export class IPFS {
     formData.append('file', str(text), {
       knownLength: text.length,
       filename: 'file',
-      contentType: 'plain/text'
+      contentType: 'plain/text',
     })
 
     const response = await fetch(`${this.url}/api/v0/add`, {
       method: 'post',
       body: formData,
-      timeout: 1000
+      timeout: 1000,
     })
 
     const json = await response.json()

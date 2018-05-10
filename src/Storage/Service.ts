@@ -48,7 +48,7 @@ export class Service {
       this.logger.error(
         {
           method: 'downloadNextHash',
-          error
+          error,
         },
         'Uncaught Error Downloading Next Hash'
       )
