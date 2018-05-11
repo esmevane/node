@@ -4,9 +4,11 @@ import * as Pino from 'pino'
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
 import { childWithFileName } from 'Helpers/Logging'
+import { minutesToMiliseconds } from 'Helpers/Time'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
 
+import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 import { Entry } from './Entry'
 import { IPFS } from './IPFS'
 
@@ -17,16 +19,19 @@ export class ClaimController {
   private readonly collection: Collection
   private readonly messaging: Messaging
   private readonly ipfs: IPFS
+  private readonly configuration: ClaimControllerConfiguration
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
     @inject('DB') db: Db,
     @inject('Messaging') messaging: Messaging,
-    @inject('IPFS') ipfs: IPFS
+    @inject('IPFS') ipfs: IPFS,
+    @inject('ClaimControllerConfiguration') configuration: ClaimControllerConfiguration
   ) {
     this.logger = childWithFileName(logger, __filename)
     this.db = db
     this.collection = this.db.collection('storage')
+    this.configuration = configuration
     this.messaging = messaging
     this.ipfs = ipfs
   }
@@ -66,53 +71,21 @@ export class ClaimController {
     )
   }
 
-  async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
-    const logger = this.logger.child({ method: 'updateEntryPairs' })
-    logger.trace('started claim update hash pairs')
-    await this.updateClaimIdIPFSHashPairs([
-      {
-        claimId: claim.id,
-        ipfsHash: entry.ipfsHash,
-      },
-    ])
-    logger.trace('finished claim update hash pairs')
-    return {
-      claim,
-      entry,
-      ...rest,
-    }
+  async downloadNextHash({
+    retryDelay = minutesToMiliseconds(this.configuration.downloadRetryDelayInMinutes),
+    maxAttempts = this.configuration.downloadMaxAttempts,
+  }: {
+    retryDelay?: number
+    maxAttempts?: number
+  } = {}) {
+    return this.findEntryToDownload({ retryDelay, maxAttempts })
+      .then(this.updateEntryAttempts.bind(this))
+      .then(this.downloadEntryClaim.bind(this))
+      .then(this.updateEntryPairs.bind(this))
+      .then(this.publishEntryDownload.bind(this))
   }
 
-  async publishEntryDownload({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
-    const logger = this.logger.child({ method: 'publishEntryDownload' })
-    logger.trace('started claim publishing')
-    await this.messaging.publishClaimsDownloaded([
-      {
-        claim,
-        ipfsHash: entry.ipfsHash,
-      },
-    ])
-    logger.trace('finished claim publishing')
-    return {
-      claim,
-      entry,
-      ...rest,
-    }
-  }
-
-  async downloadEntryClaim({ entry, ...rest }: { entry: Entry }) {
-    const logger = this.logger.child({ method: 'downloadEntryClaim' })
-    logger.trace('starting claim download')
-    const claim = await this.downloadClaim(entry.ipfsHash)
-    logger.trace('finished claim download', claim)
-    return {
-      entry,
-      claim,
-      ...rest,
-    }
-  }
-
-  async findEntryToDownload({
+  private async findEntryToDownload({
     currentTime = new Date().getTime(),
     retryDelay,
     maxAttempts,
@@ -123,7 +96,7 @@ export class ClaimController {
     maxAttempts: number
   }) {
     const logger = this.logger.child({ method: 'findEntryToDownload' })
-    logger.info('started finding claim')
+    logger.trace('started finding entry')
     const entry = await this.collection.findOne({
       claimId: null,
       ipfsHash: { $exists: true },
@@ -147,7 +120,11 @@ export class ClaimController {
         },
       ],
     })
-    logger.info('finished finding claim', entry)
+
+    if (!entry) throw new Error('No valid entries found')
+
+    logger.trace('finished finding entry', entry)
+
     return {
       currentTime,
       retryDelay,
@@ -157,7 +134,7 @@ export class ClaimController {
     }
   }
 
-  async updateEntryAttempts({
+  private async updateEntryAttempts({
     entry,
     currentTime = new Date().getTime(),
     ...rest
@@ -166,7 +143,8 @@ export class ClaimController {
     currentTime?: number
   }) {
     const logger = this.logger.child({ method: 'updateEntryAttempts' })
-    logger.trace('started updating claim')
+    logger.trace('started updating entry')
+
     await this.collection.updateOne(
       {
         _id: entry._id,
@@ -176,7 +154,9 @@ export class ClaimController {
         $inc: { downloadAttempts: 1 },
       }
     )
-    logger.trace('finished updating claim')
+
+    logger.trace('finished updating entry')
+
     return {
       entry,
       currentTime,
@@ -184,12 +164,56 @@ export class ClaimController {
     }
   }
 
-  async downloadNextHash({ retryDelay = 600000, maxAttempts = 20 }: { retryDelay: number; maxAttempts: number }) {
-    return this.findEntryToDownload({ retryDelay, maxAttempts })
-      .then(this.updateEntryAttempts.bind(this))
-      .then(this.downloadEntryClaim.bind(this))
-      .then(this.updateEntryPairs.bind(this))
-      .then(this.publishEntryDownload.bind(this))
+  private async downloadEntryClaim({ entry, ...rest }: { entry: Entry }) {
+    const logger = this.logger.child({ method: 'downloadEntryClaim' })
+    logger.trace('starting claim download')
+    const claim = await this.downloadClaim(entry.ipfsHash)
+    logger.trace('finished claim download', claim)
+    return {
+      entry,
+      claim,
+      ...rest,
+    }
+  }
+
+  private async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
+    const logger = this.logger.child({ method: 'updateEntryPairs' })
+    logger.trace('started updating hash pairs')
+
+    await this.updateClaimIdIPFSHashPairs([
+      {
+        claimId: claim.id,
+        ipfsHash: entry.ipfsHash,
+      },
+    ])
+
+    logger.trace('finished updating hash pairs')
+
+    return {
+      claim,
+      entry,
+      ...rest,
+    }
+  }
+
+  private async publishEntryDownload({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
+    const logger = this.logger.child({ method: 'publishEntryDownload' })
+    logger.trace('started publishing')
+
+    await this.messaging.publishClaimsDownloaded([
+      {
+        claim,
+        ipfsHash: entry.ipfsHash,
+      },
+    ])
+
+    logger.trace('finished publishing')
+
+    return {
+      claim,
+      entry,
+      ...rest,
+    }
   }
 
   private downloadClaim = async (ipfsHash: string): Promise<Claim> => {

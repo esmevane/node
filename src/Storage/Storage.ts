@@ -6,6 +6,7 @@ import { createModuleLogger } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
 import { ClaimController } from './ClaimController'
+import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 import { IPFS } from './IPFS'
 import { IPFSConfiguration } from './IPFSConfiguration'
 import { Router } from './Router'
@@ -56,13 +57,12 @@ export class Storage {
     this.container.bind<IPFS>('IPFS').to(IPFS)
     this.container.bind<IPFSConfiguration>('IPFSConfiguration').toConstantValue({ ipfsUrl: this.configuration.ipfsUrl })
     this.container.bind<ClaimController>('ClaimController').to(ClaimController)
+    this.container
+      .bind<ClaimControllerConfiguration>('ClaimControllerConfiguration')
+      .toConstantValue(this.configuration)
     this.container.bind<Messaging>('Messaging').toConstantValue(this.messaging)
     this.container.bind<Service>('Service').to(Service)
-    this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue({
-      downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds,
-      downloadRetryDelayInMinutes: this.configuration.downloadRetryDelayInMinutes,
-      downloadMaxAttempts: this.configuration.downloadMaxAttempts,
-    })
+    this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue(this.configuration)
   }
 
   private async createIndices() {
