@@ -64,6 +64,7 @@ async function main() {
     downloadIntervalInSeconds: configuration.downloadIntervalInSeconds,
     downloadRetryDelayInMinutes: configuration.downloadRetryDelayInMinutes,
     downloadMaxAttempts: configuration.downloadMaxAttempts,
+    downloadTimeoutInSeconds: configuration.downloadTimeoutInSeconds,
   })
   try {
     await storage.start()

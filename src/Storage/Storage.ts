@@ -55,7 +55,7 @@ export class Storage {
     this.container.bind<Db>('DB').toConstantValue(this.dbConnection)
     this.container.bind<Router>('Router').to(Router)
     this.container.bind<IPFS>('IPFS').to(IPFS)
-    this.container.bind<IPFSConfiguration>('IPFSConfiguration').toConstantValue({ ipfsUrl: this.configuration.ipfsUrl })
+    this.container.bind<IPFSConfiguration>('IPFSConfiguration').toConstantValue(this.configuration)
     this.container.bind<ClaimController>('ClaimController').to(ClaimController)
     this.container
       .bind<ClaimControllerConfiguration>('ClaimControllerConfiguration')
