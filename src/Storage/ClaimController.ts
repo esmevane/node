@@ -4,6 +4,7 @@ import * as Pino from 'pino'
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
 import { asyncPipe } from 'Helpers/AsyncPipe'
+import { infoError } from 'Helpers/Exceptions'
 import { childWithFileName } from 'Helpers/Logging'
 import { minutesToMiliseconds } from 'Helpers/Time'
 import { Exchange } from 'Messaging/Messages'
@@ -124,7 +125,7 @@ export class ClaimController {
       ],
     })
 
-    if (!entry) throw new Error('No valid entries found')
+    if (!entry) throw infoError({ message: 'No valid entries found' })
 
     logger.trace('finished finding entry', entry)
 
