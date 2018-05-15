@@ -91,7 +91,7 @@ export class ClaimController {
         this.publishEntryDownload
       )({ retryDelay, maxAttempts })
       this.logger.info(result, 'Successfully downloaded entry')
-      return result;
+      return result
     } catch (error) {
       if (error instanceof InfoError) return this.logger.info(error.message)
       this.logger.error(error)
