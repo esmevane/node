@@ -56,20 +56,18 @@ export class Storage {
     this.container.bind<Router>('Router').to(Router)
     this.container.bind<IPFS>('IPFS').to(IPFS)
     this.container.bind<IPFSConfiguration>('IPFSConfiguration').toConstantValue({
-      ipfsUrl:  this.configuration.ipfsUrl,
-      downloadTimeoutInSeconds: this.configuration.downloadTimeoutInSeconds
+      ipfsUrl: this.configuration.ipfsUrl,
+      downloadTimeoutInSeconds: this.configuration.downloadTimeoutInSeconds,
     })
     this.container.bind<ClaimController>('ClaimController').to(ClaimController)
-    this.container
-      .bind<ClaimControllerConfiguration>('ClaimControllerConfiguration')
-      .toConstantValue({
-        downloadRetryDelayInMinutes: this.configuration.downloadRetryDelayInMinutes,
-        downloadMaxAttempts: this.configuration.downloadMaxAttempts
-      })
+    this.container.bind<ClaimControllerConfiguration>('ClaimControllerConfiguration').toConstantValue({
+      downloadRetryDelayInMinutes: this.configuration.downloadRetryDelayInMinutes,
+      downloadMaxAttempts: this.configuration.downloadMaxAttempts,
+    })
     this.container.bind<Messaging>('Messaging').toConstantValue(this.messaging)
     this.container.bind<Service>('Service').to(Service)
     this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue({
-      downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds
+      downloadIntervalInSeconds: this.configuration.downloadIntervalInSeconds,
     })
   }
 
