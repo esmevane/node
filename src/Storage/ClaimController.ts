@@ -64,8 +64,8 @@ export class ClaimController {
       ipfsHashes.map(ipfsHash => ({
         ipfsHash,
         claimId: null,
-        lastDownloadAttempt: null,
-        lastDownloadSuccess: null,
+        lastDownloadAttemptTime: null,
+        downloadSuccessTime: null,
         downloadAttempts: 0,
       })),
       { ordered: false }
@@ -106,13 +106,13 @@ export class ClaimController {
       $and: [
         {
           $or: [
-            { lastDownloadAttempt: null },
-            { lastDownloadAttempt: { $exists: false } },
-            { lastDownloadAttempt: { $lt: currentTime - retryDelay } },
+            { lastDownloadAttemptTime: null },
+            { lastDownloadAttemptTime: { $exists: false } },
+            { lastDownloadAttemptTime: { $lt: currentTime - retryDelay } },
           ],
         },
         {
-          $or: [{ lastDownloadSuccess: null }, { lastDownloadSuccess: { $exists: false } }],
+          $or: [{ downloadSuccessTime: null }, { downloadSuccessTime: { $exists: false } }],
         },
         {
           $or: [
@@ -153,7 +153,7 @@ export class ClaimController {
         _id: entry._id,
       },
       {
-        $set: { lastDownloadAttempt: currentTime },
+        $set: { lastDownloadAttemptTime: currentTime },
         $inc: { downloadAttempts: 1 },
       }
     )
