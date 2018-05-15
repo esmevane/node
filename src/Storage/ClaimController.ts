@@ -3,6 +3,7 @@ import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
+import { asyncPipe } from 'Helpers/AsyncPipe'
 import { childWithFileName } from 'Helpers/Logging'
 import { minutesToMiliseconds } from 'Helpers/Time'
 import { Exchange } from 'Messaging/Messages'
@@ -78,11 +79,13 @@ export class ClaimController {
     retryDelay?: number
     maxAttempts?: number
   } = {}) {
-    return this.findEntryToDownload({ retryDelay, maxAttempts })
-      .then(this.updateEntryAttempts)
-      .then(this.downloadEntryClaim)
-      .then(this.updateEntryPairs)
-      .then(this.publishEntryDownload)
+    return asyncPipe(
+      this.findEntryToDownload,
+      this.updateEntryAttempts,
+      this.downloadEntryClaim,
+      this.updateEntryPairs,
+      this.publishEntryDownload
+    )({ retryDelay, maxAttempts })
   }
 
   private findEntryToDownload = async ({
