@@ -79,13 +79,13 @@ export class ClaimController {
     maxAttempts?: number
   } = {}) {
     return this.findEntryToDownload({ retryDelay, maxAttempts })
-      .then(this.updateEntryAttempts.bind(this))
-      .then(this.downloadEntryClaim.bind(this))
-      .then(this.updateEntryPairs.bind(this))
-      .then(this.publishEntryDownload.bind(this))
+      .then(this.updateEntryAttempts)
+      .then(this.downloadEntryClaim)
+      .then(this.updateEntryPairs)
+      .then(this.publishEntryDownload)
   }
 
-  private async findEntryToDownload({
+  private findEntryToDownload = async ({
     currentTime = new Date().getTime(),
     retryDelay,
     maxAttempts,
@@ -94,7 +94,7 @@ export class ClaimController {
     currentTime?: number
     retryDelay: number
     maxAttempts: number
-  }) {
+  }) => {
     const logger = this.logger.child({ method: 'findEntryToDownload' })
     logger.trace('started finding entry')
     const entry = await this.collection.findOne({
@@ -134,14 +134,14 @@ export class ClaimController {
     }
   }
 
-  private async updateEntryAttempts({
+  private updateEntryAttempts = async ({
     entry,
     currentTime = new Date().getTime(),
     ...rest
   }: {
     entry: Entry
     currentTime?: number
-  }) {
+  }) => {
     const logger = this.logger.child({ method: 'updateEntryAttempts' })
     logger.trace('started updating entry')
 
@@ -164,7 +164,7 @@ export class ClaimController {
     }
   }
 
-  private async downloadEntryClaim({ entry, ...rest }: { entry: Entry }) {
+  private downloadEntryClaim = async ({ entry, ...rest }: { entry: Entry }) => {
     const logger = this.logger.child({ method: 'downloadEntryClaim' })
     logger.trace('starting claim download')
     const claim = await this.downloadClaim(entry.ipfsHash)
@@ -176,7 +176,7 @@ export class ClaimController {
     }
   }
 
-  private async updateEntryPairs({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
+  private updateEntryPairs = async ({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) => {
     const logger = this.logger.child({ method: 'updateEntryPairs' })
     logger.trace('started updating hash pairs')
 
@@ -196,7 +196,7 @@ export class ClaimController {
     }
   }
 
-  private async publishEntryDownload({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) {
+  private publishEntryDownload = async ({ entry, claim, ...rest }: { claim: Claim; entry: Entry }) => {
     const logger = this.logger.child({ method: 'publishEntryDownload' })
     logger.trace('started publishing')
 
