@@ -4,7 +4,7 @@ import * as Pino from 'pino'
 import { Claim, isClaim, ClaimIdIPFSHashPair } from 'poet-js'
 
 import { asyncPipe } from 'Helpers/AsyncPipe'
-import { InfoError } from 'Helpers/Exceptions'
+import { NoMoreEntriesException } from 'Helpers/Exceptions'
 import { childWithFileName } from 'Helpers/Logging'
 import { minutesToMiliseconds } from 'Helpers/Time'
 import { Exchange } from 'Messaging/Messages'
@@ -93,7 +93,7 @@ export class ClaimController {
       this.logger.info(result, 'Successfully downloaded entry')
       return result
     } catch (error) {
-      if (error instanceof InfoError) return this.logger.info(error.message)
+      if (error instanceof NoMoreEntriesException) return this.logger.info(error.message)
       this.logger.error(error)
     }
   }
@@ -134,7 +134,7 @@ export class ClaimController {
       ],
     })
 
-    if (!entry) throw new InfoError('No valid entries found')
+    if (!entry) throw new NoMoreEntriesException('No valid entries found')
 
     logger.trace('finished finding entry', entry)
 

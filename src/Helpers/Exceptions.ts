@@ -1,4 +1,4 @@
-export class InfoError extends Error {
+export class NoMoreEntriesException extends Error {
   constructor(message: string) {
     super(message)
   }
