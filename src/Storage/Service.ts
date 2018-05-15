@@ -2,7 +2,6 @@ import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
 import { Interval } from 'poet-js'
 
-import { infoError } from 'Helpers/Exceptions'
 import { childWithFileName } from 'Helpers/Logging'
 
 import { ClaimController } from './ClaimController'
@@ -35,11 +34,8 @@ export class Service {
   private downloadNextHash = async () => {
     this.logger.child({ method: 'downloadNextHash' })
     try {
-      this.logger.info('Downloading next entry')
-      const result = await this.claimController.downloadNextHash()
-      this.logger.info(result, 'Successfully downloaded entry')
+      await this.claimController.downloadNextHash()
     } catch (error) {
-      if (error.type === infoError().type) return this.logger.info(error.message)
       this.logger.error(error)
     }
   }
