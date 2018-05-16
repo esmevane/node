@@ -90,7 +90,7 @@ export class ClaimController {
         this.updateEntryPairs,
         this.publishEntryDownload
       )({ retryDelay, maxAttempts })
-      this.logger.info(result, 'Successfully downloaded entry')
+      this.logger.info('Successfully downloaded entry')
       return result
     } catch (error) {
       if (error instanceof NoMoreEntriesException) return this.logger.info(error.message)
