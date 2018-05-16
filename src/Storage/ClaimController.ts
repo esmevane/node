@@ -82,7 +82,7 @@ export class ClaimController {
   } = {}) {
     this.logger.child({ method: 'downloadNextHash' })
     try {
-      this.logger.info('Downloading next entry')
+      this.logger.trace('Downloading next entry')
       const result = await asyncPipe(
         this.findEntryToDownload,
         this.updateEntryAttempts,
@@ -93,7 +93,7 @@ export class ClaimController {
       this.logger.info('Successfully downloaded entry')
       return result
     } catch (error) {
-      if (error instanceof NoMoreEntriesException) return this.logger.info(error.message)
+      if (error instanceof NoMoreEntriesException) return this.logger.trace(error.message)
       this.logger.error(error)
     }
   }
